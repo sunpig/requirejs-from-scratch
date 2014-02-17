@@ -425,7 +425,7 @@ define('Dragon', function(){
 });
 ```
 
-Hmm, that's still not not great. 
+Hmm, that's still not so great. 
 
 ## Step 6
 
