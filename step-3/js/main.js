@@ -1,3 +1,4 @@
+// main.js
 require('Dragon', function(Dragon){
 	require('Kitty', function(Kitty){
 		require('Map', function(Map){
@@ -9,8 +10,8 @@ require('Dragon', function(Dragon){
 				// make it stop MAKE IT STOP
 			});
 		});
-	})
-})
+	});
+});
 
 // output:
 

@@ -1,3 +1,4 @@
+// main.js
 require(
 	['Dragon', 'Kitty', 'Map', 'Brain'],
 	function(Dragon, Kitty, Map) {
