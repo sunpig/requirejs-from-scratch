@@ -588,11 +588,11 @@ define([
 });
 ```
 
-By using a named path, you can just reference the module `jquery` in your array of dependencies in code, and change it once in the config block when you want to upgrade to the next version. Or you could drop in a replacement library like Zepto and see how things blow up.
+By using a named path, you can just reference the module `jquery` in your array of dependencies in code, and change it once in the config block when you want to upgrade to the next version. Or you could drop in a replacement library like Zepto and see how things cheerfully blow up.
 
 ### Using an alternative config for testing
 
-Named paths in the config block are also great for testing. By providing a different config block for your testing code, you can substitute mock objects for dependencies you don't want to test. For example, the Ace editor:
+Named paths in the config block are also great for testing. By providing a different config block for your testing code, you can substitute mock objects for dependencies you don't want to test. For example, the rather heavyweight [Ace editor](http://ace.c9.io/):
 
 ```js
 // Production config
@@ -661,7 +661,7 @@ define([
 
 Some libraries, such as jQuery, [support AMD natively](http://blog.jquery.com/2011/11/03/jquery-1-7-released/). Others, like Backbone and Underscore, have [explicitly rejected AMD](https://github.com/jashkenas/underscore/pull/431). The shim config works just fine, but the AMD working group recognizes that Underscore and Backbone in particuliar are used so often that they provide [specially prepared forks](https://github.com/amdjs/backbone/blob/master/backbone.js).
 
-### Loading other resources
+### Loading non-JS resources
 
 The AMD specification allows for (but does not require) [loader plugins](https://github.com/amdjs/amdjs-api/wiki/Loader-Plugins) that allow you to specify resources other than JavaScript modules as dependencies. For example, plain text files for client-side templating. RequireJS has built-in support for text loading:
 
@@ -683,3 +683,6 @@ function(
 });
 ```
 
+### Optimization
+
+Maybe next time.
