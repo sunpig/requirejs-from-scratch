@@ -477,7 +477,7 @@ define(id?, dependencies?, factory)
 
 Which means that you can write your code in a consistent, structured style:
 
-A named module:
+A named module with dependencies:
 
 ```js
 define('Dragon', ['Brain'], function(Brain){
@@ -524,6 +524,10 @@ define('VERSION', [], function(){
 	return '0.1.16';
 });
 ```
+
+<!--
+![A pterodactyl](http://api.ning.com/files/n9PWw31tPWxegWpU7bFDkDlfGVPNLr2y-JWudgkVnlAVSHHZcUEdirr5SOKHidnYjpnNt4y7aSpgE8EhEOESCspDaB5mTIsw/JohnnyAirplane.jpg)
+-->
 
 
 ## RequireJS
