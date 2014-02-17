@@ -1,3 +1,4 @@
+// Dragon.js
 var Dragon = function(){
 	console.log('A new dragon');
 }

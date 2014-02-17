@@ -1,3 +1,4 @@
+// Brain.js
 define('Brain', function(){
 
 	console.log('Before brain');

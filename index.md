@@ -1,56 +1,130 @@
 # RequireJS from scratch
 
-Managing client-side JavaScript dependencies isn't a great experience. Other languages have `require`:
+Managing client-side JavaScript dependencies isn't a great experience. Other languages have it easy:
 
 Python:
 
-![Ruby](http://sunpig.com/martin/code/2014/requirejs-preso/img/python-import.png)
+```python
+from django.core.urlresolvers import reverse
+from django.db import models
+from django.utils import timezone
+```
 
 Ruby:
 
-![Ruby](http://sunpig.com/martin/code/2014/requirejs-preso/img/ruby-require.png)
+```ruby
+require 'digest/md5'
+require 'colorize'
+require 'etl/extract_data'
+```
 
 Client-side JavaScript has this bundle of hot love in store for you:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/js-script-tag-soup.png)
+```html
+<script src="/js/lib/ace/src-min/ace.js"></script>
+<script src="/js/lib/jquery-plugins/jquery.csv.js"></script>
+<script src="/js/models/QueryParameterModel.js"></script>
+<script src="/js/collections/QueryParametersCollection.js"></script>
+<script src="/js/models/QueryModel"></script>
+<script src="/js/views/ExecuteQueryView.js"></script>
+<script src="/js/views/AceEditorView.js"></script>
+<script src="/js/views/QueryActionsView.js"></script>
+<script src="/js/views/LoggedQueryApp.js"></script>
+<script>
+	// Initialize the JS app
+	void (new window.FD.LoggedQueryApp({
+		...
+	})).render();
+</script>
+```
 
 or this:
 
 ![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/js-explicit-dependency-order.png)
 
+<!--
 ![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/rainbow-vomit.gif)
+-->
 
 It works, but it's fragile. The order of script inclusion is significant, but it isn't *explicit* in the JS code. Deleting and refactoring code is hard, because you have to spend a lot of time manually tracing dependencies.
 
 NodeJS has a nice [module system](http://nodejs.org/api/modules.html). Modules are files. To make the objects in a file available to a `require` call, you export them:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/node-brain-module.png)
+```node
+// Brain.js
+var Brain = function() {
+	console.log('braaaaain');
+}
+module.exports = Brain;
+```
 
 You can then use a `require` call to use the module:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/node-require-brain.png)
+```node
+// gimme-brain.js
+var Brain = require('./Brain');
+var myBrain = new Brain();
+```
 
-It would be nice if we could do something similar in client-side code. Let's take a small (theoretical) app, and see what it would take. Here's our starting point:
+It would be nice if we could do something similar in client-side code. Let's take a small (theoretical) app, and see what it would take.
 
 ## Baseline (step 0)
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-0-index.png)
+Here's our starting point:
+
+```html
+<html>
+	<head></head>
+	<body><h1>App</h1></body>
+	<script src="js/Brain.js"></script>
+	<script src="js/Kitty.js"></script>
+	<script src="js/Dragon.js"></script>
+	<script src="js/Map.js"></script>
+	<script src="js/main.js"></script>
+</html>
+```
 
 `Dragon.js` defines a Dragon constructor:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-0-dragon.png)
+```js
+// Dragon.js
+var Dragon = function(){
+	console.log('A new dragon');
+}
+window.app = window.app || {};
+window.app.Dragon = Dragon;
+```
 
 `main.js` instantiates a few objects:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-0-main.png)
+```js
+// main.js
+var app = window.app;
+var dragon = new app.Dragon();
+var kitty = new app.Kitty();
+var map = new app.Map();
+```
 
-In this code, `window.app` serves as a namespaced module store. Every class gets attached to the window.app module (e.g. `window.app.Dragon = Dragon;`). When you want to use a class, you go to `window.app` again to get it.
+In this baseline version, `window.app` serves as a namespaced module store. Every class gets attached to the window.app module (e.g. `window.app.Dragon = Dragon;`). When you want to use a class, you go to `window.app` again to get it.
 
 ## Step 1
 
 If we wrap the `window.app` with a couple of functions, we can start to do some interesting things. Here are a couple of very simple `define` and `require` functions:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-1-mini-require.1.png)
+```js
+// mini-require.js
+
+var moduleStore = {};
+
+function define(moduleName, moduleFactory) {
+	moduleStore[moduleName] = moduleFactory;
+}
+
+function require(moduleName) {
+	var moduleFactory = moduleStore[moduleName];
+	return moduleFactory();
+}
+```
 
 The `define` function takes two parameters. `moduleName` is just the name of the module, e.g. "Dragon". The second parameter is a *function*, and is a factory for the module in question. The factory function gets stored in the global object `moduleStore`, under the `moduleName` key.
 
@@ -60,15 +134,48 @@ When you want to use the module, you call the `require` function with the module
 
 The index.html page uses the `mini-require.js` script:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-1-index.1.png)
+```html
+<html>
+	<head></head>
+	<body><h1>App</h1></body>
+	<script src="js/mini-require.js"></script>
+	<script src="js/Brain.js"></script>
+	<script src="js/Kitty.js"></script>
+	<script src="js/Dragon.js"></script>
+	<script src="js/Map.js"></script>
+	<script src="js/main.js"></script>
+</html>
+```
 
 Here's what the Dragon module looks like now. We use the `define` function to define a factory function for the Dragon module:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-1-dragon.png)
+```js
+// Dragon.js
+define('Dragon', function(){
+
+	var Dragon = function(){
+		console.log('A new dragon (1)');
+	}
+
+	return Dragon;
+
+});
+```
 
 Then, in `main.js` we can use `require` to get references to the factory functions for the modules, and create some objects with them:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-1-main.png)
+```js
+// main.js
+var Dragon = require('Dragon');
+var Kitty = require('Kitty');
+var Map = require('Map');
+
+var dragon = new Dragon();
+var kitty = new Kitty();
+var map = new Map();
+
+var Brain = require('Brain');
+```
 
 This doesn't look too different. We still have to manually include all of our scripts in the HTML file. In the module definitions we've swapped one boilerplate style for another. `main.js` has got bigger. But the refactoring has some interesting properties.
 
@@ -76,13 +183,25 @@ By wrapping the module definitions in factory functions, the module code is pars
 
 For example, let's say that the Brain has some code outside of its constructor function, but inside the factory function:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-1-brain.1.png)
+```js
+// Brain.js
+define('Brain', function(){
 
-The logging call won't be made when the script is downloaded, but only when the module is instantiated by calling its factory function:
+	console.log('Before brain');
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-1-main-with-brain.1.png)
+	var Brain = function(){
+		console.log('A new brain (1)');
+		var brain = document.createElement('img');
+		brain.src = "img/brain.svg";
+		document.body.appendChild(brain);
+	}
 
-Therefore, so long as all the modules are included *before* the `main.js` script, the order in which they are included doesn't matter. Any previously "naked" code (like the setup code in `Brain.js`) is now wrapped inside a function that won't get executed until `main.js` starts doing things.
+	return Brain;
+
+});
+```
+
+The pattern of putting all modules inside factory functions means that the order of the `<script>` tags doesn't matter -- so long as they are included before `main.js` start doing its business.
 
 However, we still have to write those script inclusions manually. We still need to know which modules will be used by `main.js`, all the way down the dependency chain.
 
@@ -90,19 +209,59 @@ However, we still have to write those script inclusions manually. We still need 
 
 Where we would like to be is here:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-2-index.png)
+```html
+<html>
+	<head></head>
+	<body><h1>App</h1></body>
+	<script src="js/mini-require.js"></script>
+	<script src="js/main.js"></script>
+</html>
+```
 
-We want the `require` function to do all the hard work for us. When you ask for a module, we want to get it immediately if it has already been loaded. If it hasn't been loaded yet, we want the function to go out and get it, and hand it over to us when it is done:
+We want the `require` function to do all the hard work for us. When you ask for a module, we want to get it immediately if it has already been loaded. If it hasn't been loaded yet, we want the function to go out and get it, and hand it over when it is available:
 
 ![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-2-load-remote.png)
 
-In code, `mini-require.js` looks something like this:
+Here's how we could rewrite `mini-require.js` to support this:
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-2-mini-require.1.png)
+```js
+// mini-require.js
 
-You don't have to change anything in main.js:
+var moduleStore = {};
 
-![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/step-2-main.1.png)
+function define(moduleName, moduleFactory) {
+	moduleStore[moduleName] = moduleFactory;
+}
+
+function require(moduleName) {
+	var moduleFactory = moduleStore[moduleName];
+	if (!moduleFactory) {
+		var request = new XMLHttpRequest();
+		request.open('GET', 'js/' + moduleName + '.js', false);  // synchronous
+		request.send(null);
+		if (request.status === 200) {
+			eval(request.responseText); // Oh my
+			moduleFactory = moduleStore[moduleName];
+		}
+	}
+	return moduleFactory();
+}
+```
+
+We don't even have to change anything in `main.js` for this to work:
+
+```js
+// main.js
+var Dragon = require('Dragon');
+var Kitty = require('Kitty');
+var Map = require('Map');
+
+var dragon = new Dragon();
+var kitty = new Kitty();
+var map = new Map();
+
+var Brain = require('Brain');
+```
 
 Yay! Except...
 
@@ -110,7 +269,9 @@ Yay! Except...
 2. It's synchronous. Each time a module is fetched, your code pauses.
 3. Cross-domain issues of XHR
 
+<!--
 ![JS](http://sunpig.com/martin/code/2014/requirejs-preso/img/grumpy-cat-01.jpg)
+-->
 
 ## Step 3
 

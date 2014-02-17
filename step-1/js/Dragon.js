@@ -1,3 +1,4 @@
+// Dragon.js
 define('Dragon', function(){
 
 	var Dragon = function(){

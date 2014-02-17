@@ -1,3 +1,4 @@
+// main.js
 var Dragon = require('Dragon');
 var Kitty = require('Kitty');
 var Map = require('Map');
