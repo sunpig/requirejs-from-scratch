@@ -1,55 +1,49 @@
 // mini-require.js
 
-var moduleStore = {};
+var _moduleStore = {};
+var _todos = [];
 
-function define(arg1, arg2, arg3) {
-	debugger;
-	if (typeof(arg1)==='string') {
-		var moduleName = arg1;
-		_require(arg2, function(deps){
-			moduleStore[arg1] = function(deps){
-				return arg3.call(deps);
-			}
-		});
-	} else {
-		_require(arg1, arg2);
-	}
+function define(moduleName, dependencies, moduleFactory) {
+	require(dependencies, function(){
+		_moduleStore[moduleName] = moduleFactory;
+	})
 }
 
-function _define(moduleName, moduleFactory) {
-	moduleStore[moduleName] = moduleFactory;
+function require(dependencies, callback) {
+	_todos.push({
+		dependencies: dependencies,
+		callback: callback,
+		resolved: false
+	})
+	dependencies.forEach(function(moduleName){
+		if (!document.querySelectorAll('[data-module-name=' + moduleName + ']').length) {
+			var scriptElement = document.createElement('script');
+			scriptElement.src = 'js/' + moduleName + '.js';
+			scriptElement.setAttribute('data-module-name', moduleName);
+			scriptElement.addEventListener("load", function(){
+				setTimeout(_resolve, 0);
+			});
+			document.body.appendChild(scriptElement);
+		}
+	});
+	_resolve();
 }
 
-function _require(moduleNames, callback) {
-	var availableModuleNames = [];
-	moduleNames.forEach(function(moduleName){
-		if (moduleStore[moduleName]) {
-			availableModuleNames.push(moduleName);
-		} else {
-			var moduleScript;
-			var moduleScriptSearch = document.querySelectorAll('[data-module-name=' + moduleName + ']');
-			if (moduleScriptSearch.length) {
-				moduleScript = moduleScriptSearch[0];
-				moduleScript.addEventListener("load", function(){
-					define(moduleNames, callback);
+function _resolve(){
+	_todos.forEach(function(todo){
+		if (!todo.resolved) {
+			var dependencies = todo.dependencies;
+			var availableDependencies = dependencies.filter(function(moduleName) {
+				return !!(_moduleStore[moduleName]);
+			});
+			if (availableDependencies.length === dependencies.length) {
+				modules = dependencies.map(function(moduleName){
+					return _moduleStore[moduleName].apply(this, modules);
 				});
-			} else {
-				moduleScript = document.createElement('script');
-				moduleScript.src = 'js/' + moduleName + '.js';
-				moduleScript.setAttribute('data-module-name', moduleName);
-				moduleScript.addEventListener("load", function(){
-					define(moduleNames, callback);
-				});
-				document.body.appendChild(moduleScript);
+				todo.callback.apply(this, modules);
+				todo.resolved = true;
 			}
 		}
 	});
-
-	if (availableModuleNames.length === moduleNames.length) {
-		modules = moduleNames.map(function(moduleName){
-			return moduleStore[moduleName]();
-		})
-		callback.apply(this, modules);
-	}
 }
 
